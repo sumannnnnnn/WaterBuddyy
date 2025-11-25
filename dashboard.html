@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - WaterBuddy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="{{ url_for('static', filename='js/chatbot.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+    <style>
+        :root {
+            --primary-blue: #0ea5e9;
+            --deep-blue: #0c4a6e;
+            --dark-bg: #111827;
+            --card-bg: rgba(17, 24, 39, 0.7);
+            --glass-bg: rgba(15, 23, 42, 0.85);
+        }
+        
+        body {
+            background-color: var(--dark-bg);
+            color: #e2e8f0;
+            background-image: 
+                radial-gradient(circle at 25% 25%, rgba(14, 165, 233, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 75% 75%, rgba(14, 165, 233, 0.05) 0%, transparent 50%);
+            overflow-x: hidden;
+        }
+        
+        /* Glassmorphism elements */
+        .navbar-glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .footer-glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .card-3d {
+            background: var(--card-bg);
+            border-radius: 1rem;
+            box-shadow: 
+                0 10px 20px rgba(0, 0, 0, 0.2),
+                0 -10px 20px rgba(14, 165, 233, 0.05) inset;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .card-3d:hover {
+            transform: translateY(-5px);
+            box-shadow: 
+                0 15px 30px rgba(0, 0, 0, 0.3),
+                0 -10px 30px rgba(14, 165, 233, 0.1) inset;
+        }
+        
+        /* Neon effects */
+        .neon-accent {
+            text-shadow: 0 0 8px rgba(14, 165, 233, 0.6);
+        }
+        
+        .neon-border {
+            box-shadow: 0 0 8px rgba(14, 165, 233, 0.6);
+        }
+        
+        /* Water glass */
+        .water-glass {
+            position: relative;
+            width: 100px;
+            height: 150px;
+            background-color: rgba(226, 232, 240, 0.1);
+            border-radius: 0 0 1rem 1rem;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        .water-fill {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: linear-gradient(to bottom, #38bdf8, #0284c7);
+            transition: height 1s cubic-bezier(0.2, 0.8, 0.2, 1);
+            border-radius: 0 0 0.8rem 0.8rem;
+        }
+        
+        .water-fill::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: 0;
+            width: 100%;
+            height: 20px;
+            background: linear-gradient(to bottom, rgba(255, 255, 255, 0.3), transparent);
+            border-radius: 50%;
+            animation: wave 2s infinite linear;
+        }
+        
+        @keyframes wave {
+            0%, 100% {
+                transform: translateX(-25%);
+            }
+            50% {
+                transform: translateX(25%);
+            }
+        }
+        
+        /* Button styles */
+        .btn-water {
+            background: linear-gradient(to bottom right, #0ea5e9, #0c4a6e);
+            color: white;
+            font-weight: 500;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .btn-water:hover {
+            background: linear-gradient(to bottom right, #0284c7, #0c4a6e);
+            box-shadow: 0 0 15px rgba(14, 165, 233, 0.5);
+        }
+        
+        /* Parallax background */
+        .parallax-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        
+        /* Chatbot styles */
+        .chat-container {
+            height: 300px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(14, 165, 233, 0.3) transparent;
+        }
+        
+        .chat-container::-webkit-scrollbar {
+            width: 5px;
+        }
+        
+        .chat-container::-webkit-scrollbar-thumb {
+            background-color: rgba(14, 165, 233, 0.3);
+            border-radius: 10px;
+        }
+        
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+        }
+        
+        .typing-indicator span {
+            height: 8px;
+            width: 8px;
+            margin: 0 1px;
+            background-color: #e0e0e0;
+            border-radius: 50%;
+            display: inline-block;
+            animation: typing 1.4s infinite ease-in-out both;
+        }
+        
+        .typing-indicator span:nth-child(1) {
+            animation-delay: 0s;
+        }
+        
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        
+        @keyframes typing {
+            0% {
+                transform: scale(1);
+                opacity: 0.6;
+            }
+            50% {
+                transform: scale(1.4);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 0.6;
+            }
+        }
+        
+        /* Water wave animation */
+        .water-wave {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 50vh;
+            background: linear-gradient(to bottom, rgba(14, 165, 233, 0.01), rgba(12, 74, 110, 0.08));
+            z-index: -1;
+            opacity: 0.6;
+        }
+        
+        .water-wave::before,
+        .water-wave::after {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            top: 0;
+            left: 0;
+            transform-origin: 0 0;
+        }
+        
+        .water-wave::before {
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 88.7'%3E%3Cpath d='M800 56.9c-155.5 0-204.9-50-405.5-49.9-200 0-250 49.9-394.5 49.9v31.8h800v-31.8z' fill='rgba(14, 165, 233, 0.05)'/%3E%3C/svg%3E");
+            background-size: 50% 100%;
+            background-repeat: repeat-x;
+            animation: wave-animation 20s -3s linear infinite;
+        }
+        
+        .water-wave::after {
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 88.7'%3E%3Cpath d='M800 56.9c-155.5 0-204.9-50-405.5-49.9-200 0-250 49.9-394.5 49.9v31.8h800v-31.8z' fill='rgba(12, 74, 110, 0.05)'/%3E%3C/svg%3E");
+            background-size: 50% 100%;
+            background-repeat: repeat-x;
+            animation: wave-animation 15s linear reverse infinite;
+        }
+        
+        @keyframes wave-animation {
+            0% {
+                transform: translate(-50%, 0) scale(0.5, 1);
+            }
+            100% {
+                transform: translate(0, 0) scale(0.5, 1);
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+    <!-- Water wave background -->
+    <div class="water-wave"></div>
+    <div class="parallax-bg"></div>
+    
+    <!-- Navigation Bar -->
+    <nav class="navbar-glass sticky top-0 z-50 w-full px-4 py-2 shadow-lg">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-water text-blue-400 text-2xl neon-accent"></i>
+                <span class="text-xl font-bold text-blue-300 neon-accent">WaterBuddy</span>
+            </div>
+            <div class="flex items-center space-x-6">
+                <a href="{{ url_for('dashboard') }}" class="font-medium text-blue-300 hover:text-blue-200 transition-colors">Dashboard</a>
+                <a href="{{ url_for('insights') }}" class="font-medium text-gray-300 hover:text-blue-200 transition-colors">Insights</a>
+                <a href="{{ url_for('settings') }}" class="font-medium text-gray-300 hover:text-blue-200 transition-colors">Settings</a>
+                <form action="{{ url_for('logout') }}" method="post">
+                    <button type="submit" class="flex items-center space-x-1 text-gray-300 hover:text-blue-200 transition-colors">
+                        <span>Logout</span>
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-grow container mx-auto px-4 py-6">
+        <!-- Welcome Section -->
+        <div class="mb-8 text-center">
+            <h1 class="text-2xl font-bold text-blue-300 neon-accent">Welcome back, {{ user.name }}!</h1>
+            <p class="text-gray-300">{{ current_date }}</p>
+        </div>
+        
+        <!-- Main Dashboard Content -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- Water Intake Card -->
+            <div class="card-3d p-6 col-span-1">
+                <h2 class="text-xl font-bold mb-4 text-blue-300 neon-accent">Today's Water Intake</h2>
+                <div class="flex items-center justify-between">
+                    <div class="water-glass mx-auto">
+                        <div class="water-fill" id="water-fill"></div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-3xl font-bold text-blue-400" id="current-intake">{{ intake }} / {{ target }}</div>
+                        <div class="text-gray-400">ml consumed</div>
+                        <div class="text-gray-300 mt-1" id="percentage-display">{{ percentage }}%</div>
+                        <div class="mt-2 flex flex-col space-y-2">
+                            <button id="add-water" class="btn-water px-4 py-2 rounded-lg neon-border">
+                                <i class="fas fa-plus mr-2"></i>Add Water
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <div class="text-center text-gray-400 mb-2">Quick Add</div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button class="quick-add btn-water py-1 px-2 rounded-lg text-sm" data-amount="50">50ml</button>
+                        <button class="quick-add btn-water py-1 px-2 rounded-lg text-sm" data-amount="100">100ml</button>
+                        <button class="quick-add btn-water py-1 px-2 rounded-lg text-sm" data-amount="150">150ml</button>
+                        <button class="quick-add btn-water py-1 px-2 rounded-lg text-sm" data-amount="200">200ml</button>
+                        <button class="quick-add btn-water py-1 px-2 rounded-lg text-sm" data-amount="250">250ml</button>
+                        <button class="quick-add btn-water py-1 px-2 rounded-lg text-sm" data-amount="500">500ml</button>
+                    </div>
+                    </div>
+                </div>
+                
+            <!-- History and Streak Card -->
+            <div class="card-3d p-6 col-span-1">
+                <h2 class="text-xl font-bold mb-4 text-blue-300 neon-accent">Your Progress</h2>
+                <div class="mb-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-gray-300">Current Streak</span>
+                        <span class="text-2xl font-bold text-blue-400">{{ streak }} days</span>
+                    </div>
+                    <div class="h-2 bg-gray-700 rounded-full">
+                        <div class="h-2 bg-gradient-to-r from-blue-500 to-blue-300 rounded-full" id="streak-bar"></div>
+                    </div>
+                </div>
+                
+                <div class="mt-6">
+                    <h3 class="text-lg font-semibold mb-3 text-gray-200">This Month</h3>
+                    <div class="grid grid-cols-7 gap-1 text-center">
+                        <div class="text-xs text-gray-400">S</div>
+                        <div class="text-xs text-gray-400">M</div>
+                        <div class="text-xs text-gray-400">T</div>
+                        <div class="text-xs text-gray-400">W</div>
+                        <div class="text-xs text-gray-400">T</div>
+                        <div class="text-xs text-gray-400">F</div>
+                        <div class="text-xs text-gray-400">S</div>
+                        
+                        {% for day in calendar_days %}
+                            {% if day.empty %}
+                                <div class="calendar-day empty"></div>
+                            {% elif day.achieved %}
+                                <div class="calendar-day achieved bg-blue-500 text-white rounded-full h-8 w-8 flex items-center justify-center mx-auto">{{ day.day }}</div>
+                            {% elif day.today %}
+                                <div class="calendar-day today border-2 border-blue-400 text-blue-300 rounded-full h-8 w-8 flex items-center justify-center mx-auto">{{ day.day }}</div>
+                            {% else %}
+                                <div class="calendar-day text-gray-400 bg-gray-700/50 rounded-full h-8 w-8 flex items-center justify-center mx-auto">{{ day.day }}</div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Chatbot Assistant Card -->
+            <div class="card-3d p-6 col-span-1">
+                <h2 class="text-xl font-bold mb-4 text-blue-300 neon-accent">
+                    <i class="fas fa-robot mr-2"></i>WaterBuddy AI Assistant
+                </h2>
+                
+                {% if not session.get('gemini_api_key_set') %}
+                <div class="mb-4 p-2 bg-yellow-800/30 border border-yellow-700/50 rounded-lg text-xs text-yellow-200 flex items-center">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    <span>Using basic AI. <a href="{{ url_for('settings') }}" class="underline hover:text-white">Set up Gemini API</a> for enhanced responses.</span>
+                </div>
+                {% endif %}
+                
+                <div id="chatContainer" class="chat-container p-3 bg-gray-800/90 rounded-lg mb-4 h-64 overflow-y-auto">
+                    <!-- Chat messages will be added here dynamically by JavaScript -->
+                </div>
+                
+                <!-- Typing indicator -->
+                <div id="typingIndicator" class="hidden flex items-center mb-4 ml-12">
+                    <div class="flex-shrink-0 mr-3">
+                        <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
+                            <i class="fas fa-robot text-white text-sm"></i>
+                        </div>
+                    </div>
+                    <div class="bg-blue-100 p-2 rounded-lg rounded-tl-none">
+                        <div class="typing-indicator">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex items-center">
+                    <input type="text" id="messageInput" class="flex-grow py-2 px-3 rounded-l-lg bg-gray-700 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ask me anything about hydration...">
+                    <button id="sendMessage" class="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-r-lg transition duration-300">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+                
+                <div class="mt-3 text-xs text-gray-400 text-center">
+                    Try asking: "How much water should I drink?", "Add a glass of water", or "Give me a hydration tip"
+                </div>
+
+                <!-- Quick water add buttons for chat -->
+                <div class="mt-2 flex justify-center gap-2">
+                    <button onclick="sendDirectCommand('add')" class="px-2 py-1 text-xs bg-blue-500/80 hover:bg-blue-500 text-white rounded-lg transition-colors">
+                        add glass
+                    </button>
+                    <button onclick="sendDirectCommand('add 300ml')" class="px-2 py-1 text-xs bg-blue-500/80 hover:bg-blue-500 text-white rounded-lg transition-colors">
+                        add 300ml
+                    </button>
+                    <button onclick="sendDirectCommand('add 500ml')" class="px-2 py-1 text-xs bg-blue-500/80 hover:bg-blue-500 text-white rounded-lg transition-colors">
+                        add 500ml
+                    </button>
+                </div>
+            </div>
+                    </div>
+                    
+        <!-- Recommendations & Tips Section -->
+        <div class="my-8">
+            <div class="card-3d p-6">
+                <h2 class="text-xl font-bold mb-4 text-blue-300 neon-accent">Personalized Recommendations</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h3 class="font-semibold text-gray-200 mb-2">Optimal Drinking Schedule</h3>
+                        <ul class="space-y-2 text-gray-300">
+                            <li class="flex items-center">
+                                <i class="fas fa-check-circle text-blue-400 mr-2"></i>
+                                <span>7:00 AM - 250ml after waking up</span>
+                            </li>
+                            <li class="flex items-center">
+                                <i class="fas fa-check-circle text-blue-400 mr-2"></i>
+                                <span>9:00 AM - 200ml mid-morning</span>
+                            </li>
+                            <li class="flex items-center">
+                                <i class="fas fa-check-circle text-blue-400 mr-2"></i>
+                                <span>12:00 PM - 300ml with lunch</span>
+                            </li>
+                            <li class="flex items-center">
+                                <i class="fas fa-check-circle text-blue-400 mr-2"></i>
+                                <span>3:00 PM - 200ml afternoon refreshment</span>
+                            </li>
+                            <li class="flex items-center">
+                                <i class="fas fa-check-circle text-blue-400 mr-2"></i>
+                                <span>6:00 PM - 250ml with dinner</span>
+                            </li>
+                            <li class="flex items-center">
+                                <i class="fas fa-check-circle text-blue-400 mr-2"></i>
+                                <span>8:00 PM - 150ml evening hydration</span>
+                            </li>
+                        </ul>
+                    </div>
+                <div>
+                        <h3 class="font-semibold text-gray-200 mb-2">Hydration Tips</h3>
+                        <div class="bg-blue-900/30 border border-blue-700/50 rounded-lg p-4 text-gray-300">
+                            <p class="mb-3"><span class="font-semibold text-blue-300">Tip of the day:</span> {{ tip }}</p>
+                            <div class="flex items-center text-sm text-gray-400">
+                                <i class="fas fa-lightbulb mr-2 text-yellow-400"></i>
+                                <span>Remember to carry a water bottle when you go out today!</span>
+                        </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer-glass py-4 px-4 mt-auto">
+        <div class="container mx-auto flex justify-between items-center">
+                <div class="text-gray-400 text-sm">
+                    &copy; 2025 WaterBuddy. All rights reserved.
+                </div>
+            <div class="flex space-x-4 text-gray-400">
+                <a href="#" class="hover:text-blue-300 transition-colors"><i class="fab fa-twitter"></i></a>
+                <a href="#" class="hover:text-blue-300 transition-colors"><i class="fab fa-instagram"></i></a>
+                <a href="#" class="hover:text-blue-300 transition-colors"><i class="fab fa-facebook"></i></a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Modal for adding water -->
+    <div id="add-water-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="card-3d p-6 w-96 rounded-xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-blue-300 neon-accent">Add Water Intake</h3>
+                <button id="close-modal" class="text-gray-400 hover:text-white">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="water-form" class="space-y-4">
+                <div>
+                    <label for="water-amount" class="block text-gray-300 mb-2">Amount (ml)</label>
+                    <input type="number" id="water-amount" name="amount" min="10" max="2000" value="250" class="w-full py-2 px-3 rounded-lg bg-gray-700 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label for="water-time" class="block text-gray-300 mb-2">Time</label>
+                    <input type="text" id="water-time" name="time" class="w-full py-2 px-3 rounded-lg bg-gray-700 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Select time">
+                </div>
+                <div>
+                    <label for="water-note" class="block text-gray-300 mb-2">Note (optional)</label>
+                    <input type="text" id="water-note" name="note" class="w-full py-2 px-3 rounded-lg bg-gray-700 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="E.g., After workout">
+                </div>
+                <button type="submit" class="w-full btn-water py-2 px-4 rounded-lg font-medium neon-border">
+                    Save Water Intake
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Initialize time picker
+        flatpickr("#water-time", {
+            enableTime: true,
+            noCalendar: true,
+            dateFormat: "H:i",
+            defaultDate: new Date(),
+            time_24hr: true
+        });
+        
+        // Show and hide modal
+        document.getElementById('add-water').addEventListener('click', function() {
+            document.getElementById('add-water-modal').classList.remove('hidden');
+        });
+        
+        document.getElementById('close-modal').addEventListener('click', function() {
+            document.getElementById('add-water-modal').classList.add('hidden');
+        });
+        
+        // Function to send a direct command to the chatbot
+        function sendDirectCommand(command) {
+            document.getElementById('messageInput').value = command;
+            sendMessage();
+        }
+        
+        // Function to add water
+        function addWater(amount, note = 'Quick add') {
+            // Convert amount to integer
+            amount = parseInt(amount, 10);
+            
+            if (isNaN(amount) || amount <= 0) {
+                console.error('Invalid water amount:', amount);
+                alert('Please enter a valid amount of water.');
+                return;
+            }
+            
+            fetch('/add_water', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    amount: amount,
+                    time: new Date().toTimeString().slice(0, 5),
+                    note: note
+                }),
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    // Update the displayed intake and water fill
+                    const waterFill = document.getElementById('water-fill');
+                    if (waterFill) {
+                        waterFill.style.height = data.percentage + '%';
+                    }
+                    
+                    // Update current intake display
+                    const currentIntakeEl = document.getElementById('current-intake');
+                    if (currentIntakeEl) {
+                        currentIntakeEl.textContent = data.current_amount + ' / ' + data.goal + 'ml';
+                    }
+                    
+                    // Update percentage display
+                    const percentageEl = document.getElementById('percentage-display');
+                    if (percentageEl) {
+                        percentageEl.textContent = Math.min(100, Math.floor(data.percentage)) + '%';
+                    }
+                    
+                    // No page reload - just update the UI
+                } else {
+                    throw new Error(data.message || 'Failed to add water');
+                }
+            })
+            .catch(error => {
+                console.error('Error adding water:', error);
+                alert('Failed to add water. Please try again.');
+            });
+        }
+        
+        // Handle quick add buttons
+        document.querySelectorAll('.quick-add').forEach(button => {
+            button.addEventListener('click', function() {
+                const amount = this.dataset.amount;
+                addWater(amount);
+            });
+        });
+        
+        // Handle form submission
+        document.getElementById('water-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const amount = document.getElementById('water-amount').value;
+            const note = document.getElementById('water-note').value || 'Added water';
+            
+            addWater(amount, note);
+            
+            // Close modal
+            document.getElementById('add-water-modal').classList.add('hidden');
+        });
+        
+        // Chatbot functionality
+        document.getElementById('sendMessage').addEventListener('click', function() {
+            sendMessage();
+        });
+        
+        document.getElementById('messageInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+        
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            
+            if (message) {
+                // Add user message to chat
+                addMessageToChat('user', message);
+                input.value = '';
+                
+                // Show typing indicator
+                const typingIndicator = document.createElement('div');
+                typingIndicator.className = 'typing-indicator mb-3';
+                typingIndicator.innerHTML = `
+                    <div class="flex items-start">
+                        <div class="bg-blue-600/80 rounded-lg p-3 text-white max-w-xs">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+                `;
+                document.getElementById('chatContainer').appendChild(typingIndicator);
+                
+                // Scroll to bottom
+                const chatContainer = document.getElementById('chatContainer');
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+                
+                // Send to backend
+                fetch('/chatbot_message', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message: message }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Remove typing indicator
+                    document.querySelector('.typing-indicator').remove();
+                    
+                    // Add bot response
+                    addMessageToChat('bot', data.message);
+                    
+                    // Update water fill if water was added
+                    if (data.water_added) {
+                        // Update the displayed intake and water fill
+                        const waterFill = document.getElementById('water-fill');
+                        if (waterFill) {
+                            waterFill.style.height = data.percentage + '%';
+                        }
+                        
+                        // Update current intake display
+                        const currentIntakeEl = document.getElementById('current-intake');
+                        if (currentIntakeEl) {
+                            currentIntakeEl.textContent = data.current_amount + ' / ' + data.goal + 'ml';
+                        }
+                        
+                        // Update percentage display
+                        const percentageEl = document.getElementById('percentage-display');
+                        if (percentageEl) {
+                            percentageEl.textContent = Math.min(100, Math.floor(data.percentage)) + '%';
+                        }
+                    }
+                });
+            }
+        }
+        
+        function addMessageToChat(sender, message) {
+            const chatContainer = document.getElementById('chatContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'mb-3';
+            
+            if (sender === 'user') {
+                messageDiv.innerHTML = `
+                    <div class="flex items-end justify-end">
+                        <div class="bg-blue-500/80 rounded-lg p-3 text-white max-w-xs">
+                            ${message}
+                        </div>
+                    </div>
+                `;
+            } else {
+                messageDiv.innerHTML = `
+                    <div class="flex items-start">
+                        <div class="bg-blue-600/80 rounded-lg p-3 text-white max-w-xs">
+                            ${message}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+        
+        // Water reminder functionality
+        let reminderCheckInterval;
+        
+        function startReminderChecks() {
+            // Check for reminders immediately on page load
+            checkForReminder();
+            
+            // Then check every minute (60000 ms)
+            reminderCheckInterval = setInterval(checkForReminder, 60000);
+        }
+        
+        function checkForReminder() {
+            fetch('/check_water_reminder')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.should_remind) {
+                        // Add reminder message to chat
+                        addMessageToChat('bot', data.message);
+                        
+                        // Optionally display a browser notification if allowed
+                        if (Notification.permission === 'granted') {
+                            new Notification('Water Reminder', {
+                                body: data.message,
+                                icon: '/static/images/water-icon.png'
+                            });
+                        } else if (Notification.permission !== 'denied') {
+                            Notification.requestPermission();
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking for water reminders:', error);
+                });
+        }
+        
+        // Set initial water fill and streak bar heights on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize water fill height using the percentage from Flask
+            const waterFill = document.getElementById('water-fill');
+            if (waterFill) {
+                waterFill.style.height = '{{ percentage }}%';
+            }
+            
+            // Initialize streak progress bar width
+            const streakBar = document.getElementById('streak-bar');
+            if (streakBar) {
+                streakBar.style.width = '{{ streak_percentage }}%';
+            }
+            
+            // Start checking for water reminders
+            startReminderChecks();
+            
+            // Request permission for browser notifications
+            if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+                Notification.requestPermission();
+            }
+        });
+    </script>
+</body>
+</html>
